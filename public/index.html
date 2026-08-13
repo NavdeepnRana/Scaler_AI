@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PII Redactor | Secure Data Masking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f9fafb;
+            --bg-surface: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --primary: #0f172a;
+            --primary-hover: #1e293b;
+            --focus-ring: rgba(15, 23, 42, 0.2);
+            --success: #059669;
+            --error: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            width: 100%;
+            max-width: 560px;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            background-color: #fcfcfc;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background-color: #f8fafc;
+        }
+
+        .upload-icon {
+            display: block;
+            margin: 0 auto 12px;
+            width: 48px;
+            height: 48px;
+            color: var(--text-secondary);
+        }
+        
+        .upload-area:hover .upload-icon, .upload-area.dragover .upload-icon {
+            color: var(--primary);
+        }
+
+        .upload-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        #file-input {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-name {
+            display: block;
+            margin-top: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--primary);
+            word-break: break-all;
+        }
+
+        .btn-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background-color: var(--primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-submit:focus {
+            outline: 2px solid var(--focus-ring);
+            outline-offset: 2px;
+        }
+
+        .btn-submit:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-container {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 0.9rem;
+            min-height: 20px;
+        }
+
+        .status-success { color: var(--success); }
+        .status-error { color: var(--error); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PII Redactor</h1>
+            <p>Securely mask sensitive data in your documents</p>
+        </div>
+
+        <form id="upload-form">
+            <div class="upload-area" id="drop-zone">
+                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <div class="upload-text">Click or drag file to this area to upload</div>
+                <div class="upload-hint">Supports PDF, TXT, and DOCX</div>
+                <input type="file" id="file-input" name="file" accept=".pdf, .txt, .docx" required>
+                <span class="file-name" id="file-name-display"></span>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submit-btn">
+                <span id="btn-text">Redact Document</span>
+                <div class="spinner" id="spinner"></div>
+            </button>
+        </form>
+
+        <div id="status" class="status-container"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const spinner = document.getElementById('spinner');
+        const statusDiv = document.getElementById('status');
+
+        // File Selection Handling
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+                statusDiv.textContent = '';
+                statusDiv.className = 'status-container';
+            } else {
+                fileNameDisplay.textContent = '';
+            }
+        });
+
+        // Drag and Drop styling
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+        });
+
+        // Form Submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // UI Loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            spinner.style.display = 'block';
+            statusDiv.textContent = '';
+            statusDiv.className = 'status-container';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/redact', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Failed to process document.');
+                }
+
+                // Handle file download
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                
+                const disposition = response.headers.get('Content-Disposition');
+                let filename = 'redacted_document.docx';
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    var matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) { 
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+                
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+
+                statusDiv.textContent = 'Document successfully redacted and downloaded.';
+                statusDiv.className = 'status-container status-success';
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.textContent = error.message;
+                statusDiv.className = 'status-container status-error';
+            } finally {
+                // Reset UI state
+                submitBtn.disabled = false;
+                btnText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
